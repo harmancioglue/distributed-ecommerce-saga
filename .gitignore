@@ -1,0 +1,190 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Built binaries
+main
+cmd/main
+*/cmd/main
+*/main
+
+# Build artifacts
+build/
+dist/
+bin/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+
+# Log files
+*.log
+logs/
+log/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+.docker/
+docker-compose.override.yml
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+.temp/
+
+# Coverage reports
+coverage.txt
+coverage.html
+coverage.out
+*.cover
+
+# Profiling data
+*.prof
+*.cpu
+*.mem
+
+# Air (live reload tool for Go)
+.air.toml
+tmp/
+
+# Delve debugger
+__debug_bin
+
+# Node.js (if using for frontend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if using for scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+
+# Certificates
+*.pem
+*.crt
+*.key
+*.p12
+
+# Local development
+local/
+dev/
+.local/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Archive files
+*.tar
+*.tar.gz
+*.zip
+*.rar
+
+# OS generated files
+*.pid
+*.seed
+*.pid.lock
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Service-specific ignores
+*/vendor/
+*/build/
+*/dist/
+*/tmp/
+*/logs/
+
+# Migration files backup
+*.sql.bak
+
+# Test results
+test-results/
+test-output/
+*.xml
+
+# Benchmark results
+*.bench
+
+# Documentation generated files
+docs/_build/
+docs/html/
+docs/latex/
+
+# Local configuration overrides
+config.local.yml
+config.local.yaml
+config.local.json
+
+# RabbitMQ mnesia directory
+mnesia/
+
+# Prometheus data
+prometheus_data/
+
+# Grafana data
+grafana_data/
+
+# PostgreSQL data
+postgres_data/
+pgdata/
+
+# Redis data
+redis_data/
+
+# Application specific
+**/uploads/
+**/static/uploads/
