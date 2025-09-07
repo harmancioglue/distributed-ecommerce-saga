@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+
 	"github.com/distributed-ecommerce-saga/saga-orchestrator/internal/domain"
 	"github.com/google/uuid"
 )
@@ -110,12 +111,12 @@ func (r *SagaRepository) GetSagaByID(sagaID uuid.UUID) (*domain.SagaInstance, er
 func (r *SagaRepository) UpdateSaga(saga *domain.SagaInstance) error {
 	contextJSON, err := json.Marshal(saga.Context)
 	if err != nil {
-		return fmt.Errorf("context serialization hatası: %v", err)
+		return fmt.Errorf("context serialization error: %v", err)
 	}
 
 	stepsJSON, err := json.Marshal(saga.CompletedSteps)
 	if err != nil {
-		return fmt.Errorf("steps serialization hatası: %v", err)
+		return fmt.Errorf("steps serialization error: %v", err)
 	}
 
 	query := `

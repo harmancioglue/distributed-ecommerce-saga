@@ -3,13 +3,14 @@ package messaging
 import (
 	"context"
 	"fmt"
-	"github.com/streadway/amqp"
 	"log"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/streadway/amqp"
 )
 
 type RabbitMQClient struct {
@@ -59,12 +60,12 @@ func (r *RabbitMQClient) Connect() error {
 	for i := 0; i < r.config.RetryCount; i++ {
 		r.connection, err = amqp.Dial(r.config.ConnectionURL())
 		if err != nil {
-			log.Printf("RabbitMQ bağlantı hatası (deneme %d/%d): %v", i+1, r.config.RetryCount, err)
+			log.Printf("RabbitMQ connection error (attempt %d/%d): %v", i+1, r.config.RetryCount, err)
 			if i < r.config.RetryCount-1 {
 				time.Sleep(r.config.RetryDelay)
 				continue
 			}
-			return fmt.Errorf("RabbitMQ'ya bağlanılamadı: %v", err)
+			return fmt.Errorf("failed to connect to RabbitMQ: %v", err)
 		}
 
 		r.channel, err = r.connection.Channel()
@@ -85,10 +86,10 @@ func (r *RabbitMQClient) Connect() error {
 		if err != nil {
 			r.channel.Close()
 			r.connection.Close()
-			return fmt.Errorf("Exchange oluşturulamadı: %v", err)
+			return fmt.Errorf("failed to create exchange: %v", err)
 		}
 
-		log.Printf("RabbitMQ'ya başarıyla bağlandı: %s", r.config.Host)
+		log.Printf("Successfully connected to RabbitMQ: %s", r.config.Host)
 
 		// Listen connection drops
 		go r.handleReconnection()
@@ -136,24 +137,24 @@ func (r *RabbitMQClient) Close() error {
 
 	if r.channel != nil {
 		if err := r.channel.Close(); err != nil {
-			closeErr = fmt.Errorf("channel kapatma hatası: %v", err)
-			log.Printf("Channel kapatılamadı: %v", err)
+			closeErr = fmt.Errorf("channel close error: %v", err)
+			log.Printf("Failed to close channel: %v", err)
 		}
 	}
 
 	if r.connection != nil {
 		if err := r.connection.Close(); err != nil {
 			if closeErr != nil {
-				closeErr = fmt.Errorf("%v; connection kapatma hatası: %v", closeErr, err)
+				closeErr = fmt.Errorf("%v; connection close error: %v", closeErr, err)
 			} else {
-				closeErr = fmt.Errorf("connection kapatma hatası: %v", err)
+				closeErr = fmt.Errorf("connection close error: %v", err)
 			}
-			log.Printf("Connection kapatılamadı: %v", err)
+			log.Printf("Failed to close connection: %v", err)
 		}
 	}
 
 	if closeErr == nil {
-		log.Println("RabbitMQ bağlantısı başarıyla kapatıldı")
+		log.Println("RabbitMQ connection closed successfully")
 	}
 
 	return closeErr

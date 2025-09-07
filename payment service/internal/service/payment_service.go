@@ -86,7 +86,7 @@ func (s *PaymentService) ProcessPayment(request domain.PaymentProcessRequest) er
 	// Payment successful
 	payment.ProcessPayment(gatewayResponse.TransactionID, gatewayResponse.ExternalRef)
 	if err := s.paymentRepo.UpdatePayment(payment); err != nil {
-		log.Printf("Payment success güncelleme hatası: %v", err)
+		log.Printf("Payment success update error: %v", err)
 		// Burada compensating action yapılabilir
 	}
 

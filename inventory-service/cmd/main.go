@@ -8,9 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/distributed-ecommerce-saga/order-service/internal/handlers"
-	"github.com/distributed-ecommerce-saga/order-service/internal/repository"
-	"github.com/distributed-ecommerce-saga/order-service/internal/service"
+	"github.com/distributed-ecommerce-saga/inventory-service/internal/handlers"
+	"github.com/distributed-ecommerce-saga/inventory-service/internal/repository"
+	"github.com/distributed-ecommerce-saga/inventory-service/internal/service"
 	"github.com/distributed-ecommerce-saga/shared-domain/messaging"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -20,16 +20,14 @@ import (
 )
 
 func main() {
-	log.Println("🚀 Order Service starting...")
+	log.Println("🚀 Starting Inventory Service...")
 
-	// Database connection
 	db, err := initDatabase()
 	if err != nil {
 		log.Fatalf("Database connection error: %v", err)
 	}
 	defer db.Close()
 
-	// RabbitMQ connection
 	rabbitConfig := messaging.NewRabbitMQConfig()
 	rabbitClient := messaging.NewRabbitMQClient(rabbitConfig)
 
@@ -38,41 +36,36 @@ func main() {
 	}
 	defer rabbitClient.Close()
 
-	// Dependencies injection
 	publisher := messaging.NewPublisher(rabbitClient)
-	consumer := messaging.NewConsumer(rabbitClient, "order-service-queue", "order-service")
+	consumer := messaging.NewConsumer(rabbitClient, "inventory-service-queue", "inventory-service")
 
-	orderRepo := repository.NewOrderRepository(db)
-	orderService := service.NewOrderService(orderRepo, publisher)
-	orderHandler := handlers.NewOrderHandler(orderService)
+	inventoryRepo := repository.NewInventoryRepository(db)
+	inventoryService := service.NewInventoryService(inventoryRepo, publisher)
+	inventoryHandler := handlers.NewInventoryHandler(inventoryService)
 
-	// Fiber app setup
 	app := setupFiberApp()
+	setupRoutes(app, inventoryHandler)
 
-	// Routes setup
-	setupRoutes(app, orderHandler)
-
-	// RabbitMQ event consumption start
 	go func() {
-		if err := orderHandler.StartConsuming(consumer); err != nil {
+		log.Println("🐰 Starting RabbitMQ event consumption...")
+		if err := inventoryHandler.StartConsuming(consumer); err != nil {
 			log.Printf("RabbitMQ consumption error: %v", err)
 		}
 	}()
 
-	// Graceful shutdown setup
 	go func() {
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 		<-sigChan
 
-		log.Println("🛑 Order Service closing...")
+		log.Println("🛑 Shutting down Inventory Service...")
 		if err := app.Shutdown(); err != nil {
 			log.Printf("Shutdown error: %v", err)
 		}
 	}()
 
-	port := getEnvOrDefault("PORT", "8001")
-	log.Printf("🌍 Order Service working: http://localhost:%s", port)
+	port := getEnvOrDefault("PORT", "8003")
+	log.Printf("🌍 Inventory Service running on: http://localhost:%s", port)
 
 	if err := app.Listen(":" + port); err != nil {
 		log.Fatalf("Server startup error: %v", err)
@@ -84,7 +77,7 @@ func initDatabase() (*sql.DB, error) {
 	dbPort := getEnvOrDefault("DB_PORT", "5432")
 	dbUser := getEnvOrDefault("DB_USER", "postgres")
 	dbPassword := getEnvOrDefault("DB_PASSWORD", "postgres")
-	dbName := getEnvOrDefault("DB_NAME", "order_db")
+	dbName := getEnvOrDefault("DB_NAME", "inventory_db")
 
 	connectionString := fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
@@ -96,7 +89,9 @@ func initDatabase() (*sql.DB, error) {
 		return nil, fmt.Errorf("database open error: %v", err)
 	}
 
-	// Connection test
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(10)
+
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("database ping error: %v", err)
 	}
@@ -107,11 +102,10 @@ func initDatabase() (*sql.DB, error) {
 
 func setupFiberApp() *fiber.App {
 	app := fiber.New(fiber.Config{
-		AppName:      "Order Service v1.0",
+		AppName:      "Inventory Service v1.0",
 		ErrorHandler: errorHandler,
 	})
 
-	// Middlewares
 	app.Use(recover.New())
 	app.Use(logger.New(logger.Config{
 		Format: "[${time}] ${status} - ${method} ${path} - ${latency}\n",
@@ -125,23 +119,10 @@ func setupFiberApp() *fiber.App {
 	return app
 }
 
-func setupRoutes(app *fiber.App, orderHandler *handlers.OrderHandler) {
-	// API v1 routes
+func setupRoutes(app *fiber.App, inventoryHandler *handlers.InventoryHandler) {
 	api := app.Group("/api/v1")
+	api.Get("/health", inventoryHandler.HealthCheck)
 
-	// Health check
-	api.Get("/health", orderHandler.HealthCheck)
-
-	// Order routes
-	orders := api.Group("/orders")
-	orders.Post("/", orderHandler.CreateOrder)    // POST /api/v1/orders
-	orders.Get("/:id", orderHandler.GetOrderByID) // GET /api/v1/orders/:id
-
-	// Customer routes
-	customers := api.Group("/customers")
-	customers.Get("/:customer_id/orders", orderHandler.GetOrdersByCustomerID) // GET /api/v1/customers/:customer_id/orders
-
-	// Route not found
 	app.Use("*", func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
@@ -164,7 +145,8 @@ func errorHandler(c *fiber.Ctx, err error) error {
 	return c.Status(code).JSON(fiber.Map{
 		"success":   false,
 		"message":   message,
-		"timestamp": fiber.Map{"error": err.Error()},
+		"error":     err.Error(),
+		"timestamp": "now",
 	})
 }
 

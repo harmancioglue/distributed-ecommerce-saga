@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+
 	"github.com/distributed-ecommerce-saga/order-service/internal/domain"
 	"github.com/distributed-ecommerce-saga/shared-domain/types"
 	"github.com/google/uuid"
@@ -162,7 +163,7 @@ func (r *OrderRepository) GetOrdersByCustomerID(customerID uuid.UUID) ([]*domain
 
 	rows, err := r.db.Query(query, customerID)
 	if err != nil {
-		return nil, fmt.Errorf("orders getirme hatası: %v", err)
+		return nil, fmt.Errorf("orders retrieval error: %v", err)
 	}
 	defer rows.Close()
 

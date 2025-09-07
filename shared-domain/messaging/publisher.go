@@ -3,11 +3,12 @@ package messaging
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/distributed-ecommerce-saga/shared-domain/events"
 	"github.com/google/uuid"
 	"github.com/streadway/amqp"
-	"log"
-	"time"
 )
 
 type Publisher struct {
@@ -63,7 +64,7 @@ func (p *Publisher) PublishSagaEvent(event events.SagaEvent) error {
 	)
 
 	if err != nil {
-		return fmt.Errorf("event publish hatası: %v", err)
+		return fmt.Errorf("event publish error: %v", err)
 	}
 
 	log.Printf("Event published: %s -> %s", routingKey, event.EventType)

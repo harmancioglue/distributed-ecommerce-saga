@@ -2,14 +2,15 @@ package service
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/distributed-ecommerce-saga/saga-orchestrator/internal/domain"
 	"github.com/distributed-ecommerce-saga/saga-orchestrator/internal/repository"
 	"github.com/distributed-ecommerce-saga/shared-domain/events"
 	"github.com/distributed-ecommerce-saga/shared-domain/messaging"
 	"github.com/distributed-ecommerce-saga/shared-domain/types"
 	"github.com/google/uuid"
-	"log"
-	"time"
 )
 
 type SagaOrchestrator struct {
@@ -90,7 +91,7 @@ func (s *SagaOrchestrator) completeSaga(saga *domain.SagaInstance) error {
 	saga.CompletedAt = &now
 
 	if err := s.sagaRepo.UpdateSaga(saga); err != nil {
-		return fmt.Errorf("saga tamamlama hatası: %v", err)
+		return fmt.Errorf("saga completion error: %v", err)
 	}
 
 	log.Printf("Saga completed successfully: SagaID=%s, OrderID=%s", saga.ID, saga.OrderID)
@@ -392,7 +393,7 @@ func (s *SagaOrchestrator) sendStepEvent(saga *domain.SagaInstance, step domain.
 				"order_id":    saga.OrderID,
 				"customer_id": saga.CustomerID,
 				"type":        "order_confirmation",
-				"message":     "Siparişiniz başarıyla oluşturuldu!",
+				"message":     "Your order has been created successfully!",
 			},
 		}
 

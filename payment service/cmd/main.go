@@ -36,7 +36,7 @@ func main() {
 	rabbitClient := messaging.NewRabbitMQClient(rabbitConfig)
 
 	if err := rabbitClient.Connect(); err != nil {
-		log.Fatalf("RabbitMQ bağlantı hatası: %v", err)
+		log.Fatalf("RabbitMQ connection error: %v", err)
 	}
 	defer rabbitClient.Close()
 
@@ -78,11 +78,11 @@ func main() {
 
 	// Server starting
 	port := getEnvOrDefault("PORT", "8002")
-	log.Printf("🌍 Payment Service çalışıyor: http://localhost:%s", port)
-	log.Printf("💳 Mock Payment Gateway aktif - Failure Rate: %.1f%%", failureRate*100)
+	log.Printf("🌍 Payment Service running on: http://localhost:%s", port)
+	log.Printf("💳 Mock Payment Gateway active - Failure Rate: %.1f%%", failureRate*100)
 
 	if err := app.Listen(":" + port); err != nil {
-		log.Fatalf("Server başlatma hatası: %v", err)
+		log.Fatalf("Server startup error: %v", err)
 	}
 }
 
