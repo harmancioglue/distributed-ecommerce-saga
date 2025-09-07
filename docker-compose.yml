@@ -1,0 +1,256 @@
+version: '3.8'
+
+services:
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: saga-postgres
+    environment:
+      POSTGRES_USER: saga_user
+      POSTGRES_PASSWORD: saga_password
+      POSTGRES_DB: saga_main
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saga_user -d saga_main"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saga-network
+
+  # Message Broker
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: saga-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: saga_user
+      RABBITMQ_DEFAULT_PASS: saga_password
+      RABBITMQ_DEFAULT_VHOST: saga_vhost
+    ports:
+      - "5672:5672"
+      - "15672:15672"  # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saga-network
+
+  # Saga Orchestrator (Internal service)
+  saga-orchestrator:
+    build:
+      context: ./saga-orchestrator
+      dockerfile: Dockerfile
+    container_name: saga-orchestrator
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: saga_user
+      DB_PASSWORD: saga_password
+      DB_NAME: orchestrator_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: saga_user
+      RABBITMQ_PASSWORD: saga_password
+      RABBITMQ_VHOST: saga_vhost
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saga-network
+    restart: unless-stopped
+
+  # Order Service
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    container_name: order-service
+    environment:
+      PORT: 8001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: saga_user
+      DB_PASSWORD: saga_password
+      DB_NAME: order_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: saga_user
+      RABBITMQ_PASSWORD: saga_password
+      RABBITMQ_VHOST: saga_vhost
+    ports:
+      - "8001:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saga-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Payment Service
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    environment:
+      PORT: 8002
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: saga_user
+      DB_PASSWORD: saga_password
+      DB_NAME: payment_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: saga_user
+      RABBITMQ_PASSWORD: saga_password
+      RABBITMQ_VHOST: saga_vhost
+      PAYMENT_FAILURE_RATE: 0.1  # 10% failure rate for testing
+    ports:
+      - "8002:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saga-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8002/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Inventory Service
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    container_name: inventory-service
+    environment:
+      PORT: 8003
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: saga_user
+      DB_PASSWORD: saga_password
+      DB_NAME: inventory_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: saga_user
+      RABBITMQ_PASSWORD: saga_password
+      RABBITMQ_VHOST: saga_vhost
+    ports:
+      - "8003:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saga-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8003/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Shipping Service
+  shipping-service:
+    build:
+      context: ./shipping-service
+      dockerfile: Dockerfile
+    container_name: shipping-service
+    environment:
+      PORT: 8004
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: saga_user
+      DB_PASSWORD: saga_password
+      DB_NAME: shipping_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: saga_user
+      RABBITMQ_PASSWORD: saga_password
+      RABBITMQ_VHOST: saga_vhost
+      SHIPPING_FAILURE_RATE: 0.05  # 5% failure rate for testing
+    ports:
+      - "8004:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saga-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8004/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Notification Service
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: notification-service
+    environment:
+      PORT: 8005
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: saga_user
+      DB_PASSWORD: saga_password
+      DB_NAME: notification_db
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: saga_user
+      RABBITMQ_PASSWORD: saga_password
+      RABBITMQ_VHOST: saga_vhost
+      NOTIFICATION_FAILURE_RATE: 0.02  # 2% failure rate for testing
+    ports:
+      - "8005:8005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - saga-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8005/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+
+networks:
+  saga-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
