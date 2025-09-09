@@ -1,4 +1,4 @@
-module github.com/distributed-ecommerce-saga/shipping-service
+module github.com/distributed-ecommerce-saga/payment-service
 
 go 1.24
 

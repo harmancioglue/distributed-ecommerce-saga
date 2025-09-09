@@ -72,8 +72,10 @@ services:
   # Order Service
   order-service:
     build:
-      context: ./order-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./order-service/Dockerfile
+      args:
+        BUILD_MODE: ${BUILD_MODE:-production}
     container_name: order-service
     environment:
       PORT: 8001
@@ -87,8 +89,12 @@ services:
       RABBITMQ_USERNAME: saga_user
       RABBITMQ_PASSWORD: saga_password
       RABBITMQ_VHOST: saga_vhost
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DELVE_DEBUG: ${DELVE_DEBUG:-false}
+      GOGC: ${GOGC:-}
     ports:
       - "8001:8001"
+      - "${ORDER_DEBUG_PORT:-}:2345"
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,6 +108,10 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    security_opt:
+      - "apparmor:unconfined"
+    cap_add:
+      - SYS_PTRACE
 
   # Payment Service
   payment-service:
@@ -253,4 +263,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.25.0.0/16

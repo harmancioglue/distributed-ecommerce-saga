@@ -7,17 +7,15 @@ RUN if [ "$BUILD_MODE" = "debug" ] ; then go install github.com/go-delve/delve/c
 
 WORKDIR /app
 
-# Copy shared domain first
-COPY shared-domain/ ./shared-domain/
-
 # Copy go mod files
-COPY order-service/go.mod order-service/go.sum ./
+COPY go.mod go.sum ./
+COPY ../shared-domain ../shared-domain
 
 # Download dependencies
 RUN go mod download
 
 # Copy source code
-COPY order-service/ .
+COPY . .
 
 # Build binary - with or without debug symbols based on BUILD_MODE
 RUN if [ "$BUILD_MODE" = "debug" ] ; then \
@@ -29,7 +27,7 @@ RUN if [ "$BUILD_MODE" = "debug" ] ; then \
 # Runtime stage
 FROM alpine:3.18
 
-# Install ca-certificates for HTTPS calls
+# Install ca-certificates for external payment gateway HTTPS calls
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
@@ -42,11 +40,11 @@ COPY --from=builder /app/main .
 COPY --from=builder /go/bin/dlv* ./
 
 # Expose ports
-EXPOSE 8001 2345
+EXPOSE 8002 2345
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8001/api/v1/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8002/api/v1/health || exit 1
 
 # Create startup script
 ARG BUILD_MODE=production
