@@ -1,8 +1,7 @@
 module github.com/distributed-ecommerce-saga/inventory-service
 
-go 1.24
+go 1.21
 
-toolchain go1.24.5
 
 require (
 	github.com/distributed-ecommerce-saga/shared-domain v1.0.0
@@ -25,4 +24,4 @@ require (
 	golang.org/x/sys v0.28.0 // indirect
 )
 
-replace github.com/distributed-ecommerce-saga/shared-domain => ../shared-domain
+replace github.com/distributed-ecommerce-saga/shared-domain => ./shared-domain

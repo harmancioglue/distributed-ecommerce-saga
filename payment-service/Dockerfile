@@ -7,15 +7,17 @@ RUN if [ "$BUILD_MODE" = "debug" ] ; then go install github.com/go-delve/delve/c
 
 WORKDIR /app
 
+# Copy shared domain first
+COPY shared-domain/ ./shared-domain/
+
 # Copy go mod files
-COPY go.mod go.sum ./
-COPY ../shared-domain ../shared-domain
+COPY payment-service/go.mod payment-service/go.sum ./
 
 # Download dependencies
 RUN go mod download
 
 # Copy source code
-COPY . .
+COPY payment-service/ .
 
 # Build binary - with or without debug symbols based on BUILD_MODE
 RUN if [ "$BUILD_MODE" = "debug" ] ; then \
@@ -52,7 +54,8 @@ RUN if [ "$BUILD_MODE" = "debug" ] ; then \
         echo '#!/bin/sh' > start.sh && \
         echo 'if [ -f ./dlv ]; then' >> start.sh && \
         echo '  echo "Starting in debug mode..."' >> start.sh && \
-        echo '  ./dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./main' >> start.sh && \
+        echo '  ./dlv exec ./main --listen=:2345 --headless=true --api-version=2 --accept-multiclient --continue &' >> start.sh && \
+        echo '  wait' >> start.sh && \
         echo 'else' >> start.sh && \
         echo '  ./main' >> start.sh && \
         echo 'fi' >> start.sh && \

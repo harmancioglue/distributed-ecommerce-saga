@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -37,8 +38,12 @@ func NewRabbitMQConfig() *RabbitMQConfig {
 }
 
 func (c *RabbitMQConfig) ConnectionURL() string {
+	vhost := c.VHost
+	if vhost != "/" && !strings.HasPrefix(vhost, "/") {
+		vhost = "/" + vhost
+	}
 	return fmt.Sprintf("amqp://%s:%s@%s:%d%s",
-		c.Username, c.Password, c.Host, c.Port, c.VHost)
+		c.Username, c.Password, c.Host, c.Port, vhost)
 }
 
 func getEnvOrDefault(key, defaultValue string) string {

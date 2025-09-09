@@ -46,8 +46,10 @@ services:
   # Saga Orchestrator (Internal service)
   saga-orchestrator:
     build:
-      context: ./saga-orchestrator
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./saga-orchestrator/Dockerfile
+      args:
+        BUILD_MODE: ${BUILD_MODE:-production}
     container_name: saga-orchestrator
     environment:
       DB_HOST: postgres
@@ -60,6 +62,8 @@ services:
       RABBITMQ_USERNAME: saga_user
       RABBITMQ_PASSWORD: saga_password
       RABBITMQ_VHOST: saga_vhost
+    ports:
+      - "${SAGA_DEBUG_PORT:-2350}:2345"
     depends_on:
       postgres:
         condition: service_healthy
@@ -116,8 +120,10 @@ services:
   # Payment Service
   payment-service:
     build:
-      context: ./payment-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./payment-service/Dockerfile
+      args:
+        BUILD_MODE: ${BUILD_MODE:-production}
     container_name: payment-service
     environment:
       PORT: 8002
@@ -134,6 +140,7 @@ services:
       PAYMENT_FAILURE_RATE: 0.1  # 10% failure rate for testing
     ports:
       - "8002:8002"
+      - "${PAYMENT_DEBUG_PORT:-}:2345"
     depends_on:
       postgres:
         condition: service_healthy
@@ -147,12 +154,18 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    security_opt:
+      - "apparmor:unconfined"
+    cap_add:
+      - SYS_PTRACE
 
   # Inventory Service
   inventory-service:
     build:
-      context: ./inventory-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./inventory-service/Dockerfile
+      args:
+        BUILD_MODE: ${BUILD_MODE:-production}
     container_name: inventory-service
     environment:
       PORT: 8003
@@ -168,6 +181,7 @@ services:
       RABBITMQ_VHOST: saga_vhost
     ports:
       - "8003:8003"
+      - "${INVENTORY_DEBUG_PORT:-2347}:2345"
     depends_on:
       postgres:
         condition: service_healthy
@@ -185,8 +199,10 @@ services:
   # Shipping Service
   shipping-service:
     build:
-      context: ./shipping-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./shipping-service/Dockerfile
+      args:
+        BUILD_MODE: ${BUILD_MODE:-production}
     container_name: shipping-service
     environment:
       PORT: 8004
@@ -203,6 +219,7 @@ services:
       SHIPPING_FAILURE_RATE: 0.05  # 5% failure rate for testing
     ports:
       - "8004:8004"
+      - "${SHIPPING_DEBUG_PORT:-2348}:2345"
     depends_on:
       postgres:
         condition: service_healthy
@@ -220,8 +237,10 @@ services:
   # Notification Service
   notification-service:
     build:
-      context: ./notification-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./notification-service/Dockerfile
+      args:
+        BUILD_MODE: ${BUILD_MODE:-production}
     container_name: notification-service
     environment:
       PORT: 8005
@@ -238,6 +257,7 @@ services:
       NOTIFICATION_FAILURE_RATE: 0.02  # 2% failure rate for testing
     ports:
       - "8005:8005"
+      - "${NOTIFICATION_DEBUG_PORT:-2349}:2345"
     depends_on:
       postgres:
         condition: service_healthy

@@ -52,12 +52,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 ARG BUILD_MODE=production
 RUN if [ "$BUILD_MODE" = "debug" ] ; then \
         echo '#!/bin/sh' > start.sh && \
-        echo 'if [ -f ./dlv ]; then' >> start.sh && \
-        echo '  echo "Starting in debug mode..."' >> start.sh && \
-        echo '  ./dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./main' >> start.sh && \
-        echo 'else' >> start.sh && \
-        echo '  ./main' >> start.sh && \
-        echo 'fi' >> start.sh && \
+        echo 'echo "Starting in debug mode..."' >> start.sh && \
+        echo './dlv exec ./main --listen=:2345 --headless=true --api-version=2 --accept-multiclient --continue' >> start.sh && \
         chmod +x start.sh ; \
     else \
         echo '#!/bin/sh' > start.sh && \

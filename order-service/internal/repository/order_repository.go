@@ -32,8 +32,8 @@ func (r *OrderRepository) CreateOrder(order *domain.OrderAggregate) error {
 	query := `
 		INSERT INTO orders (
 			id, customer_id, items, total_amount, status, 
-			shipping_address, saga_id, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			failure_reason, shipping_address, saga_id, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	`
 
 	_, err = r.db.Exec(
@@ -71,7 +71,7 @@ func (r *OrderRepository) UpdateOrder(order *domain.OrderAggregate) error {
 	query := `
 		UPDATE orders 
 		SET status = $2, items = $3, total_amount = $4, 
-			shipping_address = $5, saga_id = $6, updated_at = $7
+			failure_reason = $5, shipping_address = $6, saga_id = $7, updated_at = $8
 		WHERE id = $1
 	`
 
@@ -80,8 +80,8 @@ func (r *OrderRepository) UpdateOrder(order *domain.OrderAggregate) error {
 		order.ID,
 		order.Status,
 		itemsJSON,
-		order.FailureReason,
 		order.TotalAmount,
+		order.FailureReason,
 		addressJSON,
 		order.SagaID,
 		order.UpdatedAt,
@@ -106,7 +106,7 @@ func (r *OrderRepository) UpdateOrder(order *domain.OrderAggregate) error {
 func (r *OrderRepository) GetOrderByID(orderID uuid.UUID) (*domain.OrderAggregate, error) {
 	query := `
 		SELECT id, customer_id, items, total_amount, status,
-			   shipping_address, saga_id, created_at, updated_at
+			   failure_reason, shipping_address, saga_id, created_at, updated_at
 		FROM orders 
 		WHERE id = $1
 	`
@@ -121,6 +121,7 @@ func (r *OrderRepository) GetOrderByID(orderID uuid.UUID) (*domain.OrderAggregat
 		&itemsJSON,
 		&order.TotalAmount,
 		&order.Status,
+		&order.FailureReason,
 		&addressJSON,
 		&sagaID,
 		&order.CreatedAt,
@@ -155,7 +156,7 @@ func (r *OrderRepository) GetOrderByID(orderID uuid.UUID) (*domain.OrderAggregat
 func (r *OrderRepository) GetOrdersByCustomerID(customerID uuid.UUID) ([]*domain.OrderAggregate, error) {
 	query := `
 		SELECT id, customer_id, items, total_amount, status,
-			   shipping_address, saga_id, created_at, updated_at
+			   failure_reason, shipping_address, saga_id, created_at, updated_at
 		FROM orders 
 		WHERE customer_id = $1
 		ORDER BY created_at DESC
@@ -180,6 +181,7 @@ func (r *OrderRepository) GetOrdersByCustomerID(customerID uuid.UUID) ([]*domain
 			&itemsJSON,
 			&order.TotalAmount,
 			&order.Status,
+			&order.FailureReason,
 			&addressJSON,
 			&sagaID,
 			&order.CreatedAt,
