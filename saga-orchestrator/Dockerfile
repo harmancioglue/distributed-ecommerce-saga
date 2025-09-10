@@ -41,6 +41,11 @@ COPY --from=builder /app/main .
 # Copy delve if debug mode
 COPY --from=builder /go/bin/dlv* ./
 
+# Copy source code for debugging (debug mode only)
+ARG BUILD_MODE=production
+RUN if [ "$BUILD_MODE" = "debug" ] ; then mkdir -p /root/src ; fi
+COPY --from=builder /app/ /root/src/
+
 # Expose debug port
 EXPOSE 2345
 
@@ -54,8 +59,7 @@ RUN if [ "$BUILD_MODE" = "debug" ] ; then \
         echo '#!/bin/sh' > start.sh && \
         echo 'if [ -f ./dlv ]; then' >> start.sh && \
         echo '  echo "Starting in debug mode..."' >> start.sh && \
-        echo '  ./dlv exec ./main --listen=:2345 --headless=true --api-version=2 --accept-multiclient --continue &' >> start.sh && \
-        echo '  wait' >> start.sh && \
+        echo '  ./dlv exec ./main --listen=:2345 --headless=true --api-version=2 --accept-multiclient --continue --build-flags="-gcflags=all=-N -l"' >> start.sh && \
         echo 'else' >> start.sh && \
         echo '  ./main' >> start.sh && \
         echo 'fi' >> start.sh && \

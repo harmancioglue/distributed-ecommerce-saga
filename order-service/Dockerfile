@@ -48,7 +48,7 @@ EXPOSE 8001 2345
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8001/api/v1/health || exit 1
 
-# Create startup script
+# Create startup script (v2 - fixed debug mode)
 ARG BUILD_MODE=production
 RUN if [ "$BUILD_MODE" = "debug" ] ; then \
         echo '#!/bin/sh' > start.sh && \

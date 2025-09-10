@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -114,10 +115,37 @@ func (s *SagaOrchestrator) completeSaga(saga *domain.SagaInstance) error {
 }
 
 func (s *SagaOrchestrator) ProcessIncomingEvent(event events.SagaEvent) error {
+	log.Printf("🚨 DEBUG: ProcessIncomingEvent called with event: %+v", event)
 	log.Printf("Event received: %s from %s", event.EventType, event.Service)
 
 	// Event type'a göre işle
 	switch event.EventType {
+
+	// Order created event - start new saga
+	case events.OrderCreatedEvent:
+		log.Printf("🎯 Processing OrderCreatedEvent: %+v", event)
+		if payload, ok := event.Payload.(map[string]interface{}); ok {
+			log.Printf("📦 Payload is map: %+v", payload)
+			if orderData, exists := payload["order"]; exists {
+				log.Printf("📋 Order data found: %+v", orderData)
+				// Convert map to Order struct
+				orderBytes, err := json.Marshal(orderData)
+				if err != nil {
+					return fmt.Errorf("order data marshal error: %v", err)
+				}
+				var order types.Order
+				if err := json.Unmarshal(orderBytes, &order); err != nil {
+					return fmt.Errorf("order data conversion error: %v", err)
+				}
+				log.Printf("✅ Starting saga for order: %s", order.ID)
+				return s.StartSaga(order)
+			} else {
+				log.Printf("❌ Order data not found in payload")
+			}
+		} else {
+			log.Printf("❌ Payload is not map, type: %T, value: %+v", event.Payload, event.Payload)
+		}
+		return fmt.Errorf("invalid order created event payload")
 
 	// Success events
 	case events.PaymentProcessedEvent:

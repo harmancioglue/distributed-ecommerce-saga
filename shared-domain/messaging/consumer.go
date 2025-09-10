@@ -3,10 +3,11 @@ package messaging
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/distributed-ecommerce-saga/shared-domain/events"
-	"github.com/streadway/amqp"
 	"log"
 	"time"
+
+	"github.com/distributed-ecommerce-saga/shared-domain/events"
+	"github.com/streadway/amqp"
 )
 
 type EventHandler func(event events.SagaEvent) error
@@ -89,6 +90,10 @@ func (c *Consumer) ConsumeEvents(routingKeys []string, handler EventHandler) err
 }
 
 func (c *Consumer) handleMessage(msg amqp.Delivery, handler EventHandler) {
+	log.Printf("🔥 Raw message received: routing_key=%s, body_length=%d", msg.RoutingKey, len(msg.Body))
+	log.Printf("🔥 Raw message body: %s", string(msg.Body))
+	log.Printf("🔥 Message headers: %+v", msg.Headers)
+
 	var event events.SagaEvent
 
 	if err := json.Unmarshal(msg.Body, &event); err != nil {
